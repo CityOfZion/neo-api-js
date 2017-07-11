@@ -5,7 +5,7 @@ import commonjs from 'rollup-plugin-commonjs';
 export default {
     entry: 'index.js',
     format: 'umd',
-    dest: 'build/neo.js',
+    dest: 'dist/neo.js',
     //sourceMap: 'inline',
     moduleName: 'neo',
     plugins: [

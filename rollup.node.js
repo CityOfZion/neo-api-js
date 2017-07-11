@@ -8,7 +8,7 @@ rollup.rollup({
 }).then(function(bundle) {
   var code = bundle.generate({format: 'cjs'}).code;
   return new Promise(function(resolve, reject) {
-    fs.writeFile('build/neo.node.js', code, 'utf8', function(error) {
+    fs.writeFile('dist/neo.node.js', code, 'utf8', function(error) {
       if (error) return reject(error);
       else resolve();
     });

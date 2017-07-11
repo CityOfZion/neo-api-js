@@ -1,6 +1,6 @@
 # NEO JavaScript API
 
-A JavaScript API for connecting to a NEO Network. Interface methods implement low-level protocols and provide access to NEO nodes and Antchain.org API Services.
+A JavaScript API for connecting to a NEO Network. Interface methods provide access to NEO nodes and Antchain.org API Services implementing JSON-RPC and REST respectfully.
 
 Available soon on `npm` and `bower`.
 
@@ -10,10 +10,10 @@ Available soon on `npm` and `bower`.
 
 npm run build
 
-Creates two different bundles: One as a node module `build/neo.node.js` and one for the Browser `build/neo.js`
+Creates two bundles: One for node module `dist/neo.node.js` and one for the Browser `dist/neo.js`
 
 ## Installing
-Each built bundle is a [UMD](https://github.com/umdjs/umd) module and supports AMD, CommonJS, and vanilla environments. Developers can create a custom bundle using [Rollup](https://rollupjs.org) or your preferred bundler. 
+Each bundle is a [UMD](https://github.com/umdjs/umd) module and supports AMD, CommonJS, and vanilla environments. Developers can create a custom bundle using [Rollup](https://rollupjs.org) or any preferred bundler. 
 
 ## Usage
 
@@ -27,7 +27,7 @@ HTML:
 <script src="neo.js"></script>
 ```
 
-Use the `neo` object in your JavaScript environment.
+Use `neo` object in your JavaScript environment.
 
 ```js
 var rpc = neo.rpc('http://localhost:10332');
@@ -51,3 +51,21 @@ neo.rest(options).getAddressValue('AQVh2pG732YvtNaxEGkQUei3YA4cvo7d2i').then(fun
 ```
 
 More examples coming soon!
+
+### Test
+
+Run all the Tests:
+```bash
+npm test
+```
+
+Run only the REST API tests: 
+```bash
+npm test test/rest.api.js
+```
+
+Run only the JSON-RPC API tests:
+```bash
+npm test test/rpc.api.js
+```
+```

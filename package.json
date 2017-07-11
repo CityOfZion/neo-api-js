@@ -1,6 +1,6 @@
 {
   "name": "neo-sdk-js",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "NEO Network JavaScript API",
   "keywords": [
     "neo",
@@ -12,14 +12,17 @@
     "name": "Frank Fox",
     "url": "https://github.com/ffox77"
   },
-  "main": "build/neo.node.js",
-  "browser": "build/neo.min.js",
+  "main": "dist/neo.node.js",
+  "browser": "dist/neo.min.js",
   "module": "index",
   "jsnext:main": "index",
   "scripts": {
+    "test": "mocha",
     "build": "rollup -c && node rollup.node.js"
   },
   "devDependencies": {
+    "chai": "^4.0.2",
+    "mocha": "^3.4.2",
     "rollup": "^0.43.0",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-eslint": "^4.0.0",

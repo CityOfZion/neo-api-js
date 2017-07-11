@@ -1,0 +1,31 @@
+{
+  "name": "neo-sdk-js",
+  "version": "0.1.0",
+  "description": "NEO Network JavaScript API",
+  "keywords": [
+    "neo",
+    "blockchain"
+  ],
+  "homepage": "https://github.com/CityOfZion",
+  "license": "ISC",
+  "author": {
+    "name": "Frank Fox",
+    "url": "https://github.com/ffox77"
+  },
+  "main": "build/neo.node.js",
+  "browser": "build/neo.min.js",
+  "module": "index",
+  "jsnext:main": "index",
+  "scripts": {
+    "build": "rollup -c && node rollup.node.js"
+  },
+  "devDependencies": {
+    "rollup": "^0.43.0",
+    "rollup-plugin-commonjs": "^8.0.2",
+    "rollup-plugin-eslint": "^4.0.0",
+    "rollup-plugin-node-resolve": "^3.0.0"
+  },
+  "dependencies": {
+    "axios": "^0.16.2"
+  }
+}

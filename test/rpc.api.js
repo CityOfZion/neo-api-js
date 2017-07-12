@@ -1,5 +1,4 @@
 var expect  = require('chai').expect;
-//var axios = require('axios');
 var neo = require('../');
 
 var MAINNET_URL = 'https://seed8.antshares.org:10331';
@@ -9,30 +8,9 @@ var TEST_TX_OUT_ID = 'f4250dab094c38d8265acc15c366dc508d2e14bf5699e12d9df26577ed
 var TEST_ASSET_ID = '025d82f7b00a9ff1cfe709abe3c4741a105d067178e645bc3ebad9bc79af47d4';
 var TEST_BLOCK_HEIGHT = 110712;
 
-//function callRpc (method, params) {
-//    var options = {};
-//
-//    options.url = MAINNET_URL;
-//    options.method = 'POST';
-//
-//    var data = { jsonrpc: "2.0", id: 4};
-//    data.method = method;
-//    data.params = params || [];
-//
-//    options.data = JSON.stringify(data);
-//
-//    return axios(options).then(function (response) {
-//
-//        console.log(data.method + JSON.stringify(data.params));
-//        console.log(JSON.stringify(response.data, null, 2));
-//
-//        return response.data.error || response.data.result;
-//    });
-//}
-
 describe('RPC Services', function() {
 
-    var mainNet = neo.rpc(MAINNET_URL);
+    var mainNet = neo.node(MAINNET_URL);
 
     describe('Address', function () {
 

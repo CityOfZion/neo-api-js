@@ -30,7 +30,7 @@ HTML:
 Use `neo` object in your JavaScript environment.
 
 ```js
-var rpc = neo.rpc('http://localhost:10332');
+var rpc = neo.node('http://localhost:10332');
 rpc.getBlockCount().then(function (result) {
     console.log('Current block height: ' + result);
 });
@@ -44,7 +44,7 @@ var options = {
     baseUrl: 'http://www.antchain.org/api/v1/',
     transform: neo.transforms.antchain
 };
-neo.rest(options).getAddressValue('AQVh2pG732YvtNaxEGkQUei3YA4cvo7d2i').then(function (addressValue) {
+neo.antChain(options).getAddressValue('AQVh2pG732YvtNaxEGkQUei3YA4cvo7d2i').then(function (addressValue) {
     console.log(addressValue.antShare.value);
     console.log(addressValue.antCoin.value);
 });

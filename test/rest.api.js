@@ -10,7 +10,7 @@ var TEST_BLOCK_HEIGHT = '0';
 
 describe('Rest Services', function() {
 
-    var antChain = neo.rest(ANT_CHAIN_URL);
+    var antChain = neo.antChain(ANT_CHAIN_URL);
 
     describe('Address', function () {
 

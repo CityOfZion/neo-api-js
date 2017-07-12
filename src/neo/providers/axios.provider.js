@@ -1,8 +1,17 @@
 import axios from 'axios';
+import { providerRegistrySet } from './registry.js';
 
-export default AxiosService();
+export default function register () {
+    providerRegistrySet(AxiosService());
+}
 
 function AxiosService () {
+
+    var supportMap = { http: true, rpc: true };
+
+    function supportsProtocol (protocol) {
+        return supportMap[protocol];
+    }
 
     function invoke (restOptions) {
         return axios(restOptions);
@@ -54,6 +63,7 @@ function AxiosService () {
 
     return {
         invoke: invoke,
+        supportsProtocol: supportsProtocol,
         buildRequestOptions: buildRequestOptions
     };
 }

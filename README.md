@@ -30,11 +30,11 @@ HTML:
 Use `neo` object in your JavaScript environment.
 
 ```js
-var rpc = neo.node('http://localhost:10332');
-rpc.getBlockCount().then(function (result) {
+var localNode = neo.node('http://localhost:10332');
+localNode.getBlockCount().then(function (result) {
     console.log('Current block height: ' + result);
 });
-rpc.getLastBlockHash().then(function (result) {
+localNode.getLastBlockHash().then(function (result) {
     console.log('Hash of last block: ' + result);
 });
 ```

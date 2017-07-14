@@ -9,8 +9,9 @@ import { serviceOptions } from '../serviceOptions';
 export function node(options) {
     var inst = new RpcService();
 
+    inst.serviceName = 'node';
     inst.defaultProtocol = 'rpc';
-    inst.supportsProtocol = supportsProtocol;
+    inst.hasProtocolSupport = hasProtocolSupport;
 
     serviceOptions(inst, options);
 
@@ -34,7 +35,7 @@ export function node(options) {
     return inst;
 
     //TODO - support WebSocket
-    function supportsProtocol (protocol) {
+    function hasProtocolSupport (protocol) {
         return protocol === 'rpc';
     }
 }

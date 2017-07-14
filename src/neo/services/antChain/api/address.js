@@ -1,4 +1,4 @@
-export function getAddressValue (address) {
+export function getAddressBalance (address) {
     return this.$get('address/get_value/' + address);
 }
 

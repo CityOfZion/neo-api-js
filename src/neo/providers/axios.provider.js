@@ -1,15 +1,20 @@
 import axios from 'axios';
-import { providerRegistrySet } from './registry.js';
+import { registerProvider } from '../registry.js';
+
+//AXIOS workaround - process.env.NODE_ENV
+if (typeof process === 'undefined' && !window.process) {
+    window.process = {env: {}};
+}
 
 export default function register () {
-    providerRegistrySet(AxiosService());
+    registerProvider(AxiosService());
 }
 
 function AxiosService () {
 
     var supportMap = { http: true, rpc: true };
 
-    function supportsProtocol (protocol) {
+    function hasProtocolSupport (protocol) {
         return supportMap[protocol];
     }
 
@@ -63,7 +68,7 @@ function AxiosService () {
 
     return {
         invoke: invoke,
-        supportsProtocol: supportsProtocol,
+        hasProtocolSupport: hasProtocolSupport,
         buildRequestOptions: buildRequestOptions
     };
 }

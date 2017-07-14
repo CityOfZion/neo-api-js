@@ -5,12 +5,14 @@ export function RpcService () {
     this.$post = $post;
 
     function $post (rpcMethod, rpcParams) {
-        return rpcRequest('POST', rpcMethod, rpcParams, prepareOptions(this));
+        return rpcRequest(this, 'POST', rpcMethod, rpcParams);
     }
 
-    function rpcRequest (method, rpcMethod, rpcParams, serviceOptions) {
+    function rpcRequest (service, method, rpcMethod, rpcParams) {
 
         return wrapPromise(function (resolve, reject) {
+
+            var serviceOptions = prepareOptions(service, method + '::' + rpcMethod);
 
             var data = { jsonrpc: '2.0', id: 1 };
             data.method = rpcMethod;
@@ -50,7 +52,7 @@ export function RpcService () {
                     serviceOptions.errorFunction(response.data.error, response);
                 }
                 else {
-                    serviceOptions.successFunction(response.data.result, response.status, response.headers, response.config);
+                    serviceOptions.successFunction(serviceOptions.transform(response.data.result), response);
                 }
             })
             .catch(function (response) {

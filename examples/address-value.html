@@ -7,7 +7,7 @@
 
         function getBalance() {
 
-            neo.antChain('http://www.antchain.org/api/v1/').getAddressValue('AQVh2pG732YvtNaxEGkQUei3YA4cvo7d2i').then(function (result) {
+            neo.antChain('http://www.antchain.org/api/v1/').getAddressBalance('AQVh2pG732YvtNaxEGkQUei3YA4cvo7d2i').then(function (result) {
                 document.getElementById('antShares').innerText = 'ANS = ' + result.asset[0].value;
                 document.getElementById('antCoins').innerText = 'ANC = ' + result.asset[1].value;
             });

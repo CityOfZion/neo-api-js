@@ -1,15 +1,22 @@
 import { getBlockByHash, getBlockByHeight, getCurrentBlock, getCurrentBlockHeight } from './api/block';
-import { getAddressValue, getUnspentCoinsByAddress } from './api/address';
+import { getAddressBalance, getUnspentCoinsByAddress } from './api/address';
 import { getTransactionByTxid } from './api/tx';
 
 import { RestService } from './rest';
 import { serviceOptions } from '../serviceOptions';
+import { registerTransforms } from '../../registry.js';
+
+import antChainTransforms from './transforms';
+
+registerTransforms('antChain', antChainTransforms);
 
 export function antChain(options) {
     var inst = new RestService();
 
+    inst.serviceName = 'antChain';
     inst.defaultProtocol = 'http';
-    inst.supportsProtocol = supportsProtocol;
+
+    inst.hasProtocolSupport = hasProtocolSupport;
 
     serviceOptions(inst, options);
 
@@ -20,7 +27,7 @@ export function antChain(options) {
     inst.getCurrentBlockHeight = getCurrentBlockHeight;
 
     //Address
-    inst.getAddressValue = getAddressValue;
+    inst.getAddressBalance = getAddressBalance;
     inst.getUnspentCoinsByAddress = getUnspentCoinsByAddress;
 
     //Tx
@@ -28,7 +35,7 @@ export function antChain(options) {
 
     return inst;
 
-    function supportsProtocol (protocol) {
+    function hasProtocolSupport (protocol) {
         return protocol === 'http';
     }
 }

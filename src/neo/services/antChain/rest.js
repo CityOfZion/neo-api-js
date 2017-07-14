@@ -8,24 +8,26 @@ export function RestService () {
     this.$delete = $delete;
 
     function $post (url, data, options, queryParams) {
-        return httpRequest(url, 'POST', data, prepareOptions(this, options), queryParams);
+        return httpRequest(this, url, 'POST', data, options, queryParams);
     }
 
     function $get (url, queryParams, options) {
-        return httpRequest(url, 'GET', null, prepareOptions(this, options), queryParams);
+        return httpRequest(this, url, 'GET', null, options, queryParams);
     }
 
     function $put (url, data, options, queryParams) {
-        return httpRequest(url, 'PUT', data, prepareOptions(this, options), queryParams);
+        return httpRequest(this, url, 'PUT', data, options, queryParams);
     }
 
     function $delete (url, queryParams, options) {
-        return httpRequest(url, 'DELETE', null, prepareOptions(this, options), queryParams);
+        return httpRequest(this, url, 'DELETE', null, options, queryParams);
     }
 
-    function httpRequest (url, method, data, serviceOptions, queryParams) {
+    function httpRequest (service, url, method, data, options, queryParams) {
 
         return wrapPromise(function (resolve, reject) {
+
+            var serviceOptions = prepareOptions(service, method + '::' + url, options);
 
             if (serviceOptions.baseUrl !== undefined) {
                 url = serviceOptions.baseUrl + url;
@@ -63,7 +65,7 @@ export function RestService () {
         restProvider.invoke(restOptions)
             .then(function (response) {
                 if (response.status) {
-                    serviceOptions.successFunction(response.data, response.status, response.headers, response.config);
+                    serviceOptions.successFunction(serviceOptions.transform(response.data), response);
                 }
                 else {
                     serviceOptions.successFunction(response);

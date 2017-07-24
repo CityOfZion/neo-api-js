@@ -1,24 +1,10 @@
-import { getBlockByHash, getBlockByHeight, getCurrentBlock, getCurrentBlockHeight } from './api/block';
-import { getAddressBalance, getUnspentCoinsByAddress } from './api/address';
-import { getTransactionByTxid } from './api/tx';
-
-import { RestService } from './rest';
+import { RestService } from '../rest';
 import { serviceOptions } from '../serviceOptions';
-import { registerTransforms } from '../../registry.js';
-
-import antChainTransforms from './transforms';
-
-registerTransforms('antChain', antChainTransforms);
 
 export function antChain(options) {
     var inst = new RestService();
 
-    inst.serviceName = 'antChain';
-    inst.defaultProtocol = 'http';
-
-    inst.hasProtocolSupport = hasProtocolSupport;
-
-    serviceOptions(inst, options);
+    serviceOptions(inst, 'antChain', options);
 
     //Block
     inst.getBlockByHash = getBlockByHash;
@@ -34,8 +20,32 @@ export function antChain(options) {
     inst.getTransactionByTxid = getTransactionByTxid;
 
     return inst;
+}
 
-    function hasProtocolSupport (protocol) {
-        return protocol === 'http';
-    }
+function getAddressBalance (address) {
+    return this.$get('address/get_value/' + address);
+}
+
+function getUnspentCoinsByAddress (address) {
+    return this.$get('address/get_unspent/' + address);
+}
+
+function getBlockByHash (blockhash) {
+    return this.$get('block/get_block/' + blockhash);
+}
+
+function getBlockByHeight (height) {
+    return this.$get('block/get_block/' + height);
+}
+
+function getCurrentBlock () {
+    return this.$get('block/get_current_block');
+}
+
+function getCurrentBlockHeight () {
+    return this.$get('block/get_current_height');
+}
+
+function getTransactionByTxid (txid) {
+    return this.$get('tx/get_tx/' + txid);
 }

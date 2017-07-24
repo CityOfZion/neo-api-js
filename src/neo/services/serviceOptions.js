@@ -1,6 +1,6 @@
-import { getProviderByProtocol, getTransformsByService } from '../registry.js';
+import { getProtocolClient, getTransformsByService } from '../registry.js';
 
-export function serviceOptions(service, initObj) {
+export function serviceOptions(service, serviceName, initObj) {
 
     if (typeof(initObj) === 'string') {
         initObj = { baseUrl: initObj};
@@ -9,14 +9,13 @@ export function serviceOptions(service, initObj) {
         initObj = {};
     }
 
+    service.serviceName = serviceName;
     service.serviceBaseUrl = initObj.baseUrl || '';
-    service.serviceProtocol = service.hasProtocolSupport(initObj.protocol) ? initObj.protocol : service.defaultProtocol;
     service.servicePollInterval = initObj.poll || -1;
     service.serviceUseTransforms = false;
 
     service.baseUrl = baseUrl;
-    service.protocol = protocol;
-    service.provider = provider;
+    service.protocolClient = protocolClient;
     service.poll = poll;
     service.useTransforms = useTransforms;
 
@@ -31,24 +30,13 @@ export function serviceOptions(service, initObj) {
         return this;
     }
 
-    function protocol (val) {
+    function protocolClient (val) {
 
         if (!val) {
-            return this.serviceProtocol;
+            return this.serviceProtocolClient || getProtocolClient();
         }
 
-        this.serviceProtocol = val;
-
-        return this;
-    }
-
-    function provider (val) {
-
-        if (!val) {
-            return this.serviceProvider || getProviderByProtocol(this.serviceProtocol);
-        }
-
-        this.serviceProvider = val;
+        this.serviceProtocolClient = val;
 
         return this;
     }
@@ -79,10 +67,9 @@ export function serviceOptions(service, initObj) {
 export function prepareOptions(service, methodSignature, options) {
     options = options || {};
 
+    options.protocolClient = service.protocolClient();
     options.baseUrl = service.baseUrl();
-    options.protocol = service.protocol();
     options.poll = service.poll();
-    options.provider = service.provider();
     options.transform = transformPassThrough;
 
     if (service.serviceUseTransforms && service.serviceName)  {

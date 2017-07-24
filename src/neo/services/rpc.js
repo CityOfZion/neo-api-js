@@ -1,4 +1,4 @@
-import { prepareOptions } from '../serviceOptions.js';
+import { prepareOptions } from './serviceOptions.js';
 
 export function RpcService () {
 
@@ -42,11 +42,11 @@ export function RpcService () {
             throw new Error('You must configure at least the rpc url');
         }
 
-        var rpcProvider = serviceOptions.provider;
+        var rpcClient = serviceOptions.protocolClient;
 
-        var rpcOptions = rpcProvider.buildRequestOptions(serviceOptions);
+        var rpcOptions = rpcClient.buildRequestOptions(serviceOptions);
 
-        rpcProvider.invoke(rpcOptions)
+        rpcClient.invoke(rpcOptions)
             .then(function (response) {
                 if (response.data.error) {
                     serviceOptions.errorFunction(response.data.error, response);

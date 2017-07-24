@@ -1,14 +1,11 @@
 import axios from 'axios';
-import { registerProvider } from '../registry.js';
 
 //AXIOS workaround - process.env.NODE_ENV
 if (typeof process === 'undefined' && !window.process) {
     window.process = {env: {}};
 }
 
-export default function register () {
-    registerProvider(AxiosService());
-}
+export default AxiosService();
 
 function AxiosService () {
 

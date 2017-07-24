@@ -19,3 +19,15 @@ function AntChainTransforms () {
     ];
 
 }
+
+//Rest
+//  AntChainXyz
+//  AntChainOrg
+
+/*
+
+var restService = neo.rest('http://www.antchain.xyz/api/vi/');
+
+restService.$get('address/info/' + address).then(transformGetValue)
+
+*/

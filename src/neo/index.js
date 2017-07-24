@@ -1,6 +1,13 @@
 export { antChain } from './services/antChain/index.js';
+export { antChainXyz } from './services/antChainXyz/index.js';
 export { node } from './services/node/index.js';
 
-import registerAxios from './providers/axios.provider.js';
+import { registerProtocolClient, registerTransforms } from './registry.js';
 
-registerAxios();
+import axiosClient from './protocols/axios.http.js';
+
+registerProtocolClient(axiosClient);
+
+import antChainTransforms from './services/antChain/transforms';
+
+registerTransforms('antChain', antChainTransforms);

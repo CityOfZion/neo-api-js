@@ -1,16 +1,12 @@
-var providers = [];
+var protocolClient;
 var serviceMap = {};
 
-export function registerProvider (provider) {
-    providers.push(provider);
+export function registerProtocolClient (client) {
+    protocolClient = client;
 }
 
-export function getProviderByProtocol (protocol) {
-    for (var i = 0; i < providers.length; i++) {
-        if (providers[i].hasProtocolSupport(protocol)) {
-            return providers[i];
-        }
-    }
+export function getProtocolClient () {
+    return protocolClient;
 }
 
 export function registerTransforms (serviceName, transforms) {

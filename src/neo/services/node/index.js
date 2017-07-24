@@ -1,19 +1,10 @@
-import { getBalance } from './api/asset';
-import { getConnectionCount } from './api/net';
-import { getRawMemPool, getRawTransaction, getTxOut } from './api/tx';
-import { getLastBlockHash, getBlockByHeight, getBlockCount, getBlockHashByHeight } from './api/block';
-
-import { RpcService } from './rpc';
+import { RpcService } from '../rpc';
 import { serviceOptions } from '../serviceOptions';
 
 export function node(options) {
     var inst = new RpcService();
 
-    inst.serviceName = 'node';
-    inst.defaultProtocol = 'rpc';
-    inst.hasProtocolSupport = hasProtocolSupport;
-
-    serviceOptions(inst, options);
+    serviceOptions(inst, 'node', options);
 
     //Asset
     inst.getBalance = getBalance;
@@ -33,9 +24,40 @@ export function node(options) {
     inst.getTxOut = getTxOut;
 
     return inst;
+}
 
-    //TODO - support WebSocket
-    function hasProtocolSupport (protocol) {
-        return protocol === 'rpc';
-    }
+function getBalance (assetId) {
+    return this.$post('getbalance', [assetId]);
+}
+
+function getLastBlockHash () {
+    return this.$post('getbestblockhash', []);
+}
+
+function getBlockByHeight (height, verbose) {
+    return this.$post('getblock', [height, verbose ? 1 : 0]);
+}
+
+function getBlockCount () {
+    return this.$post('getblockcount', []);
+}
+
+function getBlockHashByHeight (height) {
+    return this.$post('getblockhash', [height]);
+}
+
+function getConnectionCount () {
+    return this.$post('getconnectioncount', []);
+}
+
+function getRawMemPool () {
+    return this.$post('getrawmempool', []);
+}
+
+function getRawTransaction (txId, verbose) {
+    return this.$post('getrawtransaction', [txId, verbose ? 1 : 0]);
+}
+
+function getTxOut (txId, index) {
+    return this.$post('gettxout', [txId, index]);
 }

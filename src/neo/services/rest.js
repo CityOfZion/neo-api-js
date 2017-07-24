@@ -1,4 +1,4 @@
-import { prepareOptions } from '../serviceOptions.js';
+import { prepareOptions } from './serviceOptions.js';
 
 export function RestService () {
 
@@ -58,11 +58,11 @@ export function RestService () {
             throw new Error('You must configure at least the http method and url');
         }
 
-        var restProvider = serviceOptions.provider;
+        var restClient = serviceOptions.protocolClient;
 
-        var restOptions = restProvider.buildRequestOptions(serviceOptions);
+        var restOptions = restClient.buildRequestOptions(serviceOptions);
 
-        restProvider.invoke(restOptions)
+        restClient.invoke(restOptions)
             .then(function (response) {
                 if (response.status) {
                     serviceOptions.successFunction(serviceOptions.transform(response.data), response);

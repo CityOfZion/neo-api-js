@@ -1,4 +1,13 @@
-import { prepareOptions } from './serviceOptions.js';
+import { serviceOptions } from './serviceOptions.js';
+import { makeRpcRequest } from './serviceRequester.js';
+
+export function rest (options) {
+    var inst = new RestService();
+
+    serviceOptions(inst, 'rest', options);
+
+    return inst;
+}
 
 export function RestService () {
 
@@ -25,61 +34,32 @@ export function RestService () {
 
     function httpRequest (service, url, method, data, options, queryParams) {
 
-        return wrapPromise(function (resolve, reject) {
-
-            var serviceOptions = prepareOptions(service, method + '::' + url, options);
-
-            if (serviceOptions.baseUrl !== undefined) {
-                url = serviceOptions.baseUrl + url;
-            }
-
-            serviceOptions.url = url;
-            serviceOptions.body = data;
-            serviceOptions.method = method;
-            serviceOptions.queryParams = queryParams;
-            serviceOptions.successFunction = resolve;
-            serviceOptions.errorFunction = reject;
-
-            makeHttpRequest(serviceOptions);
-        });
-    }
-
-    // PRIVATE FUNCTIONS
-
-    function wrapPromise (callback) {
-        return new Promise(function (resolve, reject) {
-            callback(resolve, reject);
-        });
-    }
-
-    function makeHttpRequest (serviceOptions) {
-
-        if (!serviceOptions.method || !serviceOptions.url) {
+        if (!method || !url) {
             throw new Error('You must configure at least the http method and url');
         }
 
-        var restClient = serviceOptions.protocolClient;
+        var methodSignature = method + '::' + url;
 
-        var restOptions = restClient.buildRequestOptions(serviceOptions);
+        options = options || {};
 
-        restClient.invoke(restOptions)
-            .then(function (response) {
-                if (response.status) {
-                    serviceOptions.successFunction(serviceOptions.transform(response.data), response);
-                }
-                else {
-                    serviceOptions.successFunction(response);
-                }
-            })
-            .catch(function (response) {
-                if (response.status) {
-                    serviceOptions.errorFunction(response.data, response);
-                }
-                else {
-                    //console.log(response);
-                    serviceOptions.errorFunction(response);
-                }
-            });
+        if (service.baseUrl() !== undefined) {
+            url = service.baseUrl() + url;
+        }
+
+        options.url = url;
+        options.body = data;
+        options.method = method;
+        options.queryParams = queryParams;
+
+        options.transformResponse = function (response) {
+            return response.data;
+        };
+
+        options.transformResponseError = function (response) {
+            return response.data;
+        };
+
+        return makeRpcRequest(service, options, methodSignature);
     }
 }
 

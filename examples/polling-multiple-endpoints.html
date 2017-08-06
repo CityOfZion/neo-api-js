@@ -1,0 +1,43 @@
+<!doctype>
+<html>
+
+<head>
+    <script type="text/javascript" src="neo.js"></script>
+    <script type="text/javascript">
+
+        function test() {
+
+            pollBestBlock();
+        }
+
+        function pollBestBlock () {
+
+            var pollingPolicy = neo.service.createPollingPolicy(5000);
+
+            var counter = 0;
+
+            pollingPolicy.onInterval(function () {
+                document.getElementById('COUNTER').innerText = 'COUNTER: ' + (++counter);
+            });
+
+            neo.node('http://api.otcgo.cn:10332').poll(pollingPolicy).getBlockCount().notify(function (result) {
+                document.getElementById('BLOCK_HEIGHT1').innerText = 'BLOCK HEIGHT1: ' + result;
+            });
+
+            neo.node('http://rpc.neeeo.org:10332').poll(pollingPolicy).getBlockCount().notify(function (result) {
+                document.getElementById('BLOCK_HEIGHT2').innerText = 'BLOCK HEIGHT2: ' + result;
+            });
+        }
+
+    </script>
+</head>
+<body>
+<h1>AntShares Balance</h1>
+<button type="button" onClick="test();">Test</button>
+<span id="antShares"></span> <span id="antCoins"></span>
+<div id="TEST"></div>
+<div id="BLOCK_HEIGHT1"></div>
+<div id="BLOCK_HEIGHT2"></div>
+<div id="COUNTER"></div>
+</body>
+</html>

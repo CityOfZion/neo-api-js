@@ -1,4 +1,4 @@
-import { prepareOptions } from './serviceOptions.js';
+import { makeRpcRequest } from './serviceRequester.js';
 
 export function RpcService () {
 
@@ -10,54 +10,32 @@ export function RpcService () {
 
     function rpcRequest (service, method, rpcMethod, rpcParams) {
 
-        return wrapPromise(function (resolve, reject) {
-
-            var serviceOptions = prepareOptions(service, method + '::' + rpcMethod);
-
-            var data = { jsonrpc: '2.0', id: 1 };
-            data.method = rpcMethod;
-            data.params = rpcParams || [];
-
-            serviceOptions.url = serviceOptions.baseUrl;
-            serviceOptions.data = data;
-            serviceOptions.method = method;
-            serviceOptions.successFunction = resolve;
-            serviceOptions.errorFunction = reject;
-
-            makeRpcRequest(serviceOptions);
-        });
-    }
-
-    // PRIVATE FUNCTIONS
-
-    function wrapPromise (callback) {
-        return new Promise(function (resolve, reject) {
-            callback(resolve, reject);
-        });
-    }
-
-    function makeRpcRequest (serviceOptions) {
-
-        if (!serviceOptions.url) {
-            throw new Error('You must configure at least the rpc url');
+        if (!rpcMethod) {
+            throw new Error('You must configure the rpc method');
         }
 
-        var rpcClient = serviceOptions.protocolClient;
+        var data = { jsonrpc: '2.0', id: 1 };
 
-        var rpcOptions = rpcClient.buildRequestOptions(serviceOptions);
+        data.method = rpcMethod;
+        data.params = rpcParams || [];
 
-        rpcClient.invoke(rpcOptions)
-            .then(function (response) {
-                if (response.data.error) {
-                    serviceOptions.errorFunction(response.data.error, response);
-                }
-                else {
-                    serviceOptions.successFunction(serviceOptions.transform(response.data.result), response);
-                }
-            })
-            .catch(function (response) {
-                serviceOptions.errorFunction(response);
-            });
+        var options = {};
+
+        options.url = service.baseUrl();
+        options.data = data;
+        options.method = method;
+
+        options.transformResponse = function (response) {
+            return response.data.result;
+        };
+
+        options.transformResponseError = function (response) {
+            return response.data.error;
+        };
+
+        var methodSignature = method + '::' + rpcMethod;
+
+        return makeRpcRequest(service, options, methodSignature);
     }
 }
 

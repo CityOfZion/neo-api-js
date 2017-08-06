@@ -12,11 +12,32 @@
                 document.getElementById('antCoins').innerText = 'ANC = ' + result.asset[1].value;
             });
         }
+
+//        function pollBestBlock () {
+//            neo.node('http://api.otcgo.cn:10332').poll(500).getBlockCount().notify(function (result) {
+//                document.getElementById('BLOCK_HEIGHT').innerText = 'BLOCK HEIGHT: ' + result;
+//            });
+//        }
+//
+//        function getBestBlock() {
+//            var ANT_CHAIN_URL = 'http://www.antchain.org/api/v1/';//http://www.antchain.org/api/v1/';
+//
+//            neo.rest(ANT_CHAIN_URL).$get('block/get_current_height')
+//                .then(function (result) {
+//                    return result.height;
+//                })
+//                .then(function (result) {
+//                    console.log(JSON.stringify(result, null, 2));
+//                    document.getElementById('TEST').innerText = 'PASS = ' + result;
+//                });
+//        }
     </script>
 </head>
 <body>
 <h1>AntShares Balance</h1>
 <button type="button" onClick="getBalance();">Get Balance</button>
 <span id="antShares"></span> <span id="antCoins"></span>
+<div id="TEST"></div>
+<div id="BLOCK_HEIGHT"></div>
 </body>
 </html>

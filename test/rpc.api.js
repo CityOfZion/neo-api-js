@@ -1,7 +1,7 @@
 var expect  = require('chai').expect;
 var neo = require('../');
 
-var MAINNET_URL = 'http://seed3.neo.org:10332';
+var MAINNET_URL = 'http://rpc.neeeo.org:10332';//http://seed5.neo.org:10332';
 
 var TEST_TX_ID = '3631f66024ca6f5b033d7e0809eb993443374830025af904fb51b0334f127cda';
 var TEST_TX_OUT_ID = 'f4250dab094c38d8265acc15c366dc508d2e14bf5699e12d9df26577ed74d657';
@@ -10,7 +10,7 @@ var TEST_BLOCK_HEIGHT = 110712;
 
 describe('RPC Services', function() {
 
-    this.timeout(5000);
+    //this.timeout(5000);
 
     var mainNet = neo.node(MAINNET_URL);
 

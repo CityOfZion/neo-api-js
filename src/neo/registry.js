@@ -1,6 +1,12 @@
 var protocolClient;
 var serviceMap = {};
 
+export var registry = {
+    registerTransforms: registerTransforms,
+    registerProtocolClient: registerProtocolClient
+};
+
+
 export function registerProtocolClient (client) {
     protocolClient = client;
 }

@@ -7,6 +7,12 @@
 var protocolClient;
 var serviceMap = {};
 
+var registry = {
+    registerTransforms: registerTransforms,
+    registerProtocolClient: registerProtocolClient
+};
+
+
 function registerProtocolClient (client) {
     protocolClient = client;
 }
@@ -25,16 +31,16 @@ function getTransformsByService (serviceName) {
 
 function serviceOptions(service, serviceName, initObj) {
 
-    if (typeof(initObj) === 'string') {
+    if (typeof initObj === 'string') {
         initObj = { baseUrl: initObj};
     }
-    else if (typeof(initObj) !== 'object') {
+    else if (typeof initObj !== 'object') {
         initObj = {};
     }
 
     service.serviceName = serviceName;
     service.serviceBaseUrl = initObj.baseUrl || '';
-    service.servicePollInterval = initObj.poll || -1;
+    service.servicePollInterval = initObj.poll;
     service.serviceUseTransforms = false;
 
     service.baseUrl = baseUrl;
@@ -87,24 +93,257 @@ function serviceOptions(service, serviceName, initObj) {
     }
 }
 
-function prepareOptions(service, methodSignature, options) {
-    options = options || {};
 
-    options.protocolClient = service.protocolClient();
-    options.baseUrl = service.baseUrl();
-    options.poll = service.poll();
-    options.transform = transformPassThrough;
 
-    if (service.serviceUseTransforms && service.serviceName)  {
+//neo.node().baseUrl('').protocol('http').poll(2000).getBlockHeight();
+//neo.node().baseUrl('http://localhost:3033').poll(2000).getBlockHeight();
+//neo.node({ baseUrl: 'http://localhost:3033', poll: 2000 }).getBlockHeight();
 
-        var availableTransforms = getTransformsByService(service.serviceName);
+function IntervalUtil (options) {
 
-        if (availableTransforms) {
-            options.transform = getTransform(availableTransforms, methodSignature);
+    var _defaults = {
+        interval: 25 * 1000,            //25 Seconds
+        errorInterval: 5 * 60 * 1000    //5 Minutes
+    };
+
+    var _options;
+    var _intervalFunction;
+    var _intervalId;
+    var _running;
+
+    if (typeof options === 'number') {
+
+        options = Math.max(1000, options); //1 second minimum
+
+        options = {interval: options};
+    }
+
+    _options = Object.assign({}, _defaults, options || {});
+
+    //function noop () {}
+
+    function start (intervalFunction) {
+
+        if (_running) {
+            stop();
+        }
+
+        _intervalFunction = intervalFunction;
+        _running = true;
+
+        _startInterval(_options.interval);
+    }
+
+    function stop () {
+        _running = false;
+        clearTimeout(_intervalId);
+    }
+
+    function isRunning () {
+        return _running;
+    }
+
+    function _startInterval (delay) {
+
+        _intervalId = setTimeout(function () {
+            _intervalFunction();
+        }, delay);
+    }
+
+    this.stop = stop;
+    this.start = start;
+    this.isRunning = isRunning;
+}
+
+var service = Service();
+
+function Service () {
+
+    // All requests under the same policy will get coalesced.
+    function PollingPolicy (options) {
+        this.options = options;
+        this._interval = function () {};
+        this._methods = [];
+    }
+
+    //When Batch of methods complete
+    PollingPolicy.prototype.onInterval = onInterval;
+    PollingPolicy.prototype.run = run;
+
+    function onInterval (fn) {
+
+        if (typeof fn !== 'function') {
+            throw new Error('onInterval(fn) - "fn" must be of type "function"');
+        }
+
+        this._interval = fn;
+    }
+
+    function run (method) {
+        this._methods.push(method);
+    }
+
+    function createPollingPolicy (options) {
+        return new PollingPolicy(options);
+    }
+
+    function isPollingPolicy (obj) {
+        return obj instanceof PollingPolicy;
+    }
+
+    //number, optionsObj or PollPolicy
+    function getPollRunner (obj) {
+
+        if(obj instanceof PollingPolicy) {
+            if (!obj._pollRunner) {
+                obj._pollRunner = new PollRunner(obj);
+            }
+
+            return obj._pollRunner;
+        }
+
+        return new PollRunner(new PollingPolicy(obj));
+    }
+
+    return {
+        createPollingPolicy: createPollingPolicy,
+        isPollingPolicy: isPollingPolicy,
+        getPollRunner: getPollRunner
+    };
+}
+
+function PollRunner (policy) {
+
+    var intervalUtil = new IntervalUtil(policy.options);
+    var _isPaused = false;
+    var _isPolling = true;
+
+    this.stop = intervalUtil.stop;
+    this.isPolling = isPolling;
+    this.run = run;
+    this.pause = pause;
+    this.play = play;
+
+    function isPolling() {
+        return _isPolling || intervalUtil.isRunning;
+    }
+
+    function run (method) {
+        policy._methods.push(method);
+
+        return this;
+    }
+
+    function pause() {
+        _isPaused = true;
+    }
+
+    function play() {
+        if (_isPaused) {
+            _isPaused = false;
+
+            intervalUtil.start(runAll);
         }
     }
 
-    return options;
+    setTimeout(runAll, 0);
+
+    function runAll () {
+        var count = policy._methods.length;
+
+        _isPolling = false;
+
+        policy._methods.forEach(function (method) {
+            method().then(complete).catch(complete);
+        });
+
+        function complete () {
+            --count;
+
+            if (count === 0) {
+                policy._interval();
+
+                if (!_isPaused) {
+                    intervalUtil.start(runAll);
+                }
+            }
+        }
+    }
+}
+
+function makeRpcRequest (restService, httpOptions, methodSignature) {
+
+    return _wrapPromise(function (resolve, reject, notify) {
+
+        var ctx = prepareContext(restService, methodSignature);
+
+        ctx.successFunction = resolve;
+        ctx.errorFunction = reject;
+        ctx.notifyFunction = notify;
+        ctx.transformResponse = httpOptions.transformResponse || noop;
+        ctx.transformResponseError = httpOptions.transformResponseError || noop;
+
+        var rpcClient = restService.protocolClient();
+
+        var rpcOptions = rpcClient.buildRequestOptions(httpOptions);
+
+        var poll = restService.poll();
+
+        if (poll) {
+            var pollRunner = service.getPollRunner(poll).run(function () {
+                return _makeRpcRequest(rpcClient, rpcOptions, ctx);
+            });
+
+            ctx.stopPolling = pollRunner.stop;
+            ctx.isPolling = pollRunner.isPolling;
+        }
+        else {
+            _makeRpcRequest(rpcClient, rpcOptions, ctx);
+        }
+    });
+}
+
+function noop () {}
+
+function _wrapPromise (callback) {
+
+    function notify (fn) {
+        promise._notify = fn;
+
+        return this;
+    }
+
+    function handleNotify (result) {
+        promise._notify(result);
+    }
+
+    var promise = new Promise(function (resolve, reject) {
+        callback(resolve, reject, handleNotify);
+    });
+
+    promise._notify = noop;
+    promise.notify = notify;
+
+    return promise;
+}
+
+function prepareContext(service$$1, methodSignature) {
+    var ctx = {};
+
+    ctx.transform = transformPassThrough;
+    ctx.stopPolling = noop;
+    ctx.isPolling = function () { return false; };
+
+    if (service$$1.serviceUseTransforms && service$$1.serviceName)  {
+
+        var availableTransforms = getTransformsByService(service$$1.serviceName);
+
+        if (availableTransforms) {
+            ctx.transform = getTransform(availableTransforms, methodSignature);
+        }
+    }
+
+    return ctx;
 }
 
 function getTransform (availableTransforms, methodSignature) {
@@ -128,9 +367,46 @@ function transformPassThrough (rawData) {
     return rawData;
 }
 
-//neo.node().baseUrl('').protocol('http').poll(2000).getBlockHeight();
-//neo.node().baseUrl('http://localhost:3033').poll(2000).getBlockHeight();
-//neo.node({ baseUrl: 'http://localhost:3033', poll: 2000 }).getBlockHeight();
+function _makeRpcRequest (rpcClient, rpcOptions, ctx) {
+
+    return rpcClient.invoke(rpcOptions)
+        .then(function (response) {
+
+            var data = ctx.transformResponse(response);
+
+            if (!data) {
+                var error = ctx.transformResponseError(response);
+
+                if (error) {
+                    ctx.errorFunction(error, response);
+                    if (ctx.isPolling()) {
+                        ctx.stopPolling();
+                    }
+
+                    return;
+                }
+            }
+
+            if (ctx.isPolling()) {
+                ctx.notifyFunction(ctx.transform(data), response);
+            }
+            else {
+                ctx.successFunction(ctx.transform(data), response);
+            }
+
+        })
+        .catch(function (response) {
+            ctx.errorFunction(response);
+        });
+}
+
+function rest (options) {
+    var inst = new RestService();
+
+    serviceOptions(inst, 'rest', options);
+
+    return inst;
+}
 
 function RestService () {
 
@@ -157,61 +433,32 @@ function RestService () {
 
     function httpRequest (service, url, method, data, options, queryParams) {
 
-        return wrapPromise(function (resolve, reject) {
-
-            var serviceOptions$$1 = prepareOptions(service, method + '::' + url, options);
-
-            if (serviceOptions$$1.baseUrl !== undefined) {
-                url = serviceOptions$$1.baseUrl + url;
-            }
-
-            serviceOptions$$1.url = url;
-            serviceOptions$$1.body = data;
-            serviceOptions$$1.method = method;
-            serviceOptions$$1.queryParams = queryParams;
-            serviceOptions$$1.successFunction = resolve;
-            serviceOptions$$1.errorFunction = reject;
-
-            makeHttpRequest(serviceOptions$$1);
-        });
-    }
-
-    // PRIVATE FUNCTIONS
-
-    function wrapPromise (callback) {
-        return new Promise(function (resolve, reject) {
-            callback(resolve, reject);
-        });
-    }
-
-    function makeHttpRequest (serviceOptions$$1) {
-
-        if (!serviceOptions$$1.method || !serviceOptions$$1.url) {
+        if (!method || !url) {
             throw new Error('You must configure at least the http method and url');
         }
 
-        var restClient = serviceOptions$$1.protocolClient;
+        var methodSignature = method + '::' + url;
 
-        var restOptions = restClient.buildRequestOptions(serviceOptions$$1);
+        options = options || {};
 
-        restClient.invoke(restOptions)
-            .then(function (response) {
-                if (response.status) {
-                    serviceOptions$$1.successFunction(serviceOptions$$1.transform(response.data), response);
-                }
-                else {
-                    serviceOptions$$1.successFunction(response);
-                }
-            })
-            .catch(function (response) {
-                if (response.status) {
-                    serviceOptions$$1.errorFunction(response.data, response);
-                }
-                else {
-                    //console.log(response);
-                    serviceOptions$$1.errorFunction(response);
-                }
-            });
+        if (service.baseUrl() !== undefined) {
+            url = service.baseUrl() + url;
+        }
+
+        options.url = url;
+        options.body = data;
+        options.method = method;
+        options.queryParams = queryParams;
+
+        options.transformResponse = function (response) {
+            return response.data;
+        };
+
+        options.transformResponseError = function (response) {
+            return response.data;
+        };
+
+        return makeRpcRequest(service, options, methodSignature);
     }
 }
 
@@ -264,6 +511,25 @@ function getTransactionByTxid (txid) {
     return this.$get('tx/get_tx/' + txid);
 }
 
+function antChainXyz(options) {
+    var inst = new RestService();
+
+    serviceOptions(inst, 'antChainXyz', options);
+
+    inst.getAddressBalance = getAddressBalance$1;
+    inst.getAssetTransactionsByAddress = getAssetTransactionsByAddress;
+
+    return inst;
+}
+
+function getAddressBalance$1 (address) {
+    return this.$get('address/info/' + address);
+}
+
+function getAssetTransactionsByAddress (address) {
+    return this.$get('address/utxo/' + address);
+}
+
 function RpcService () {
 
     this.$post = $post;
@@ -274,54 +540,32 @@ function RpcService () {
 
     function rpcRequest (service, method, rpcMethod, rpcParams) {
 
-        return wrapPromise(function (resolve, reject) {
-
-            var serviceOptions$$1 = prepareOptions(service, method + '::' + rpcMethod);
-
-            var data = { jsonrpc: '2.0', id: 1 };
-            data.method = rpcMethod;
-            data.params = rpcParams || [];
-
-            serviceOptions$$1.url = serviceOptions$$1.baseUrl;
-            serviceOptions$$1.data = data;
-            serviceOptions$$1.method = method;
-            serviceOptions$$1.successFunction = resolve;
-            serviceOptions$$1.errorFunction = reject;
-
-            makeRpcRequest(serviceOptions$$1);
-        });
-    }
-
-    // PRIVATE FUNCTIONS
-
-    function wrapPromise (callback) {
-        return new Promise(function (resolve, reject) {
-            callback(resolve, reject);
-        });
-    }
-
-    function makeRpcRequest (serviceOptions$$1) {
-
-        if (!serviceOptions$$1.url) {
-            throw new Error('You must configure at least the rpc url');
+        if (!rpcMethod) {
+            throw new Error('You must configure the rpc method');
         }
 
-        var rpcClient = serviceOptions$$1.protocolClient;
+        var data = { jsonrpc: '2.0', id: 1 };
 
-        var rpcOptions = rpcClient.buildRequestOptions(serviceOptions$$1);
+        data.method = rpcMethod;
+        data.params = rpcParams || [];
 
-        rpcClient.invoke(rpcOptions)
-            .then(function (response) {
-                if (response.data.error) {
-                    serviceOptions$$1.errorFunction(response.data.error, response);
-                }
-                else {
-                    serviceOptions$$1.successFunction(serviceOptions$$1.transform(response.data.result), response);
-                }
-            })
-            .catch(function (response) {
-                serviceOptions$$1.errorFunction(response);
-            });
+        var options = {};
+
+        options.url = service.baseUrl();
+        options.data = data;
+        options.method = method;
+
+        options.transformResponse = function (response) {
+            return response.data.result;
+        };
+
+        options.transformResponseError = function (response) {
+            return response.data.error;
+        };
+
+        var methodSignature = method + '::' + rpcMethod;
+
+        return makeRpcRequest(service, options, methodSignature);
     }
 }
 
@@ -1694,9 +1938,9 @@ if (typeof process === 'undefined' && !window.process) {
     window.process = {env: {}};
 }
 
-var axiosClient = AxiosService();
+var axiosClient = AxiosClient();
 
-function AxiosService () {
+function AxiosClient (){
 
     var supportMap = { http: true, rpc: true };
 
@@ -1852,24 +2096,16 @@ function AntChainTransforms () {
 
 }
 
-//Rest
-//  AntChainXyz
-//  AntChainOrg
-
-/*
-
-var restService = neo.rest('http://www.antchain.xyz/api/vi/');
-
-restService.$get('address/info/' + address).then(transformGetValue)
-
-*/
-
 registerProtocolClient(axiosClient);
 
 registerTransforms('antChain', antChainTransforms);
 
 exports.antChain = antChain;
+exports.antChainXyz = antChainXyz;
 exports.node = node;
+exports.rest = rest;
+exports.registry = registry;
+exports.service = service;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

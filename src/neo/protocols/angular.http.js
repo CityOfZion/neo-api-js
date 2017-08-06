@@ -1,22 +1,23 @@
-import axios from 'axios';
 
-//AXIOS workaround - process.env.NODE_ENV
-if (typeof process === 'undefined' && !window.process) {
-    window.process = {env: {}};
+if (typeof angular === 'object') {
+
+    angular.module('neo', [])
+            .factory('angularClient', angularClient);
+
 }
 
-export var axiosClient = AxiosClient();
+export function angularClient ($http) {
 
-function AxiosClient (){
-
-    var supportMap = { http: true, rpc: true };
+    var supportMap = {http: true, rpc: true};
 
     function hasProtocolSupport (protocol) {
         return supportMap[protocol];
     }
 
     function invoke (restOptions) {
-        return axios(restOptions);
+        restOptions.data = restOptions.body;
+
+        return $http(restOptions);
     }
 
     function serialize (obj) {
@@ -40,7 +41,7 @@ function AxiosClient (){
         //Build Url with queryParams
         var paramStr = options.queryParams && serialize(options.queryParams);
 
-        if(paramStr) {
+        if (paramStr) {
             options.url = options.url + '?' + paramStr;
         }
 
@@ -48,7 +49,7 @@ function AxiosClient (){
         options = filterKeys(options, ['method', 'url', 'params', 'body', 'data', 'cache', 'headers']);
 
         options.headers = {};
-        
+
         options.headers['Accept'] = 'application/json';
         options.headers['Content-Type'] = 'application/json';
 
@@ -69,3 +70,4 @@ function AxiosClient (){
         buildRequestOptions: buildRequestOptions
     };
 }
+

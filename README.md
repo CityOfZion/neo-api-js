@@ -1,6 +1,19 @@
+<p align="center">
+  <img 
+    src="http://res.cloudinary.com/vidsy/image/upload/v1503160820/CoZ_Icon_DARKBLUE_200x178px_oq0gxm.png" 
+    width="125px;">
+</p>
+
+<h1 align="center">neo-api-js</h1>
+
+<p align="center">
+  NEO JavaScript API for connecting to a <b>NEO</b> Network.
+</p>
+
+
 # NEO JavaScript API
 
-A JavaScript API for connecting to a NEO Network. Interface methods provide access to NEO nodes and Antchain.org API Services implementing JSON-RPC and REST respectfully.
+Interface methods provide access to JSON-RPC <b>NEO</b> Nodes as well as Rest Services to AntChain and Neon.
 
 Available soon on `npm` and `bower`.
 
@@ -10,7 +23,7 @@ Available soon on `npm` and `bower`.
 
 npm run build
 
-Creates two bundles: One for node module `dist/neo-api.node.js` and one for the Browser `dist/neo.js`
+Creates two bundles: One for node module `dist/neo.node.js` and one for the Browser `dist/neo.js`
 
 ## Installing
 Each bundle is a [UMD](https://github.com/umdjs/umd) module and supports AMD, CommonJS, and vanilla environments. Developers can create a custom bundle using [Rollup](https://rollupjs.org) or any preferred bundler. 
@@ -19,7 +32,7 @@ Each bundle is a [UMD](https://github.com/umdjs/umd) module and supports AMD, Co
 
 NodeJS
 ```node
-var neo = require('neo-api.node.js');
+var neo = require('neo.node.js');
 ```
 
 HTML:

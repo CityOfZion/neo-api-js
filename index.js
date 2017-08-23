@@ -1,1 +1,0 @@
-export * from './src/neo/index.js';

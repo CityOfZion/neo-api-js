@@ -4,11 +4,9 @@
 	(factory((global.neo = global.neo || {})));
 }(this, (function (exports) { 'use strict';
 
-var protocolClient;
-var serviceMap = {};
+let protocolClient;
 
-var registry = {
-    registerTransforms: registerTransforms,
+let registry = {
     registerProtocolClient: registerProtocolClient
 };
 
@@ -19,14 +17,6 @@ function registerProtocolClient (client) {
 
 function getProtocolClient () {
     return protocolClient;
-}
-
-function registerTransforms (serviceName, transforms) {
-    serviceMap[serviceName] =  transforms;
-}
-
-function getTransformsByService (serviceName) {
-    return serviceMap[serviceName];
 }
 
 function serviceOptions(service, serviceName, initObj) {
@@ -41,12 +31,10 @@ function serviceOptions(service, serviceName, initObj) {
     service.serviceName = serviceName;
     service.serviceBaseUrl = initObj.baseUrl || '';
     service.servicePollInterval = initObj.poll;
-    service.serviceUseTransforms = false;
 
     service.baseUrl = baseUrl;
     service.protocolClient = protocolClient;
     service.poll = poll;
-    service.useTransforms = useTransforms;
 
     function baseUrl (val) {
 
@@ -80,24 +68,7 @@ function serviceOptions(service, serviceName, initObj) {
 
         return this;
     }
-
-    function useTransforms (val) {
-
-        if (!val) {
-            return this.serviceUseTransforms;
-        }
-
-        this.serviceUseTransforms = val;
-
-        return this;
-    }
 }
-
-
-
-//neo.node().baseUrl('').protocol('http').poll(2000).getBlockHeight();
-//neo.node().baseUrl('http://localhost:3033').poll(2000).getBlockHeight();
-//neo.node({ baseUrl: 'http://localhost:3033', poll: 2000 }).getBlockHeight();
 
 function IntervalUtil (options) {
 
@@ -155,15 +126,120 @@ function IntervalUtil (options) {
     this.isRunning = isRunning;
 }
 
-var service = Service();
+function RpcService () {
+
+    this.$post = $post;
+
+    function $post (rpcMethod, rpcParams) {
+        return rpcRequest(this, 'POST', rpcMethod, rpcParams);
+    }
+
+    function rpcRequest (service, method, rpcMethod, rpcParams) {
+
+        if (!rpcMethod) {
+            throw new Error('You must configure the rpc method');
+        }
+
+        var data = { jsonrpc: '2.0', id: 1 };
+
+        data.method = rpcMethod;
+        data.params = rpcParams || [];
+
+        var options = {};
+
+        options.url = service.baseUrl();
+        options.data = data;
+        options.method = method;
+
+        options.transformResponse = function (response) {
+            return response.data.result;
+        };
+
+        options.transformResponseError = function (response) {
+            return response.data.error;
+        };
+
+        return makeServiceRequest(service, options);
+    }
+}
+
+function IpcService () {
+
+    this.$send = $send;
+
+    function $send (method, params) {
+        return ipcRequest(this, method, params);
+    }
+
+    function ipcRequest (service, method, params) {
+
+        if (!method) {
+            throw new Error('You must configure the ipc method');
+        }
+
+        let data = {
+            method: method,
+            params: params || []
+        };
+
+        let options = {};
+
+        options.data = data;
+
+        return makeServiceRequest(service, options);
+    }
+}
+
+let factory = ServiceFactory();
+
+function ServiceFactory () {
+
+    function createRcpService (options) {
+        let inst = new RpcService();
+
+        serviceOptions(inst, 'node', options);
+
+        return inst;
+    }
+
+    function createIpcService (options) {
+        let inst = new IpcService();
+
+        serviceOptions(inst, 'node', options);
+
+        return inst;
+    }
+
+    function createRestService (options) {
+        let inst = new RestService();
+
+        serviceOptions(inst, 'node', options);
+
+        return inst;
+    }
+
+    return {
+        createRcpService: createRcpService,
+        createIpcService: createIpcService,
+        createRestService: createRestService
+    };
+}
+
+let service = Service();
+
+service.factory = factory;
 
 function Service () {
 
     // All requests under the same policy will get coalesced.
     function PollingPolicy (options) {
+
         this.options = options;
+        this.stopAll = function () {}; //set by PollRunner
+        this.startAll = function () {}; //set by PollRunner
+
         this._interval = function () {};
-        this._methods = [];
+        this._requests = [];
     }
 
     //When Batch of methods complete
@@ -180,7 +256,7 @@ function Service () {
     }
 
     function run (method) {
-        this._methods.push(method);
+        this._requests.push(method);
     }
 
     function createPollingPolicy (options) {
@@ -214,28 +290,32 @@ function Service () {
 
 function PollRunner (policy) {
 
-    var intervalUtil = new IntervalUtil(policy.options);
-    var _isPaused = false;
-    var _isPolling = true;
-
-    this.stop = intervalUtil.stop;
+    let intervalUtil = new IntervalUtil(policy.options);
+    let _isPaused = false;
+    let _isPolling = false;
+    
     this.isPolling = isPolling;
-    this.run = run;
+    this.addRequest = addRequest;
     this.pause = pause;
     this.play = play;
 
+    policy.stopAll = pause;
+    policy.startAll = play;
+
     function isPolling() {
-        return _isPolling || intervalUtil.isRunning;
+        return _isPolling || intervalUtil.isRunning();
     }
 
-    function run (method) {
-        policy._methods.push(method);
+    function addRequest (request) {
+        policy._requests.push(request);
 
         return this;
     }
 
     function pause() {
         _isPaused = true;
+
+        intervalUtil.stop();
     }
 
     function play() {
@@ -249,12 +329,12 @@ function PollRunner (policy) {
     setTimeout(runAll, 0);
 
     function runAll () {
-        var count = policy._methods.length;
+        let count = policy._requests.length;
 
-        _isPolling = false;
+        _isPolling = true;
 
-        policy._methods.forEach(function (method) {
-            method().then(complete).catch(complete);
+        policy._requests.forEach(function (request) {
+            request().then(complete).catch(complete);
         });
 
         function complete () {
@@ -262,6 +342,8 @@ function PollRunner (policy) {
 
             if (count === 0) {
                 policy._interval();
+
+                _isPolling = false;
 
                 if (!_isPaused) {
                     intervalUtil.start(runAll);
@@ -271,11 +353,11 @@ function PollRunner (policy) {
     }
 }
 
-function makeRpcRequest (restService, httpOptions, methodSignature) {
+function makeServiceRequest (restService, httpOptions) {
 
     return _wrapPromise(function (resolve, reject, notify) {
 
-        var ctx = prepareContext(restService, methodSignature);
+        let ctx = prepareContext();
 
         ctx.successFunction = resolve;
         ctx.errorFunction = reject;
@@ -283,32 +365,53 @@ function makeRpcRequest (restService, httpOptions, methodSignature) {
         ctx.transformResponse = httpOptions.transformResponse || noop;
         ctx.transformResponseError = httpOptions.transformResponseError || noop;
 
-        var rpcClient = restService.protocolClient();
+        let client = restService.protocolClient();
 
-        var rpcOptions = rpcClient.buildRequestOptions(httpOptions);
+        let options = client.buildRequestOptions(httpOptions);
 
-        var poll = restService.poll();
+        let poll = restService.poll();
 
         if (poll) {
-            var pollRunner = service.getPollRunner(poll).run(function () {
-                return _makeRpcRequest(rpcClient, rpcOptions, ctx);
+            let pollRunner = service.getPollRunner(poll).addRequest(function () {
+                return _makeServiceRequest(client, options, ctx);
             });
 
-            ctx.stopPolling = pollRunner.stop;
+            ctx.stopPolling = pollRunner.pause;
             ctx.isPolling = pollRunner.isPolling;
         }
         else {
-            _makeRpcRequest(rpcClient, rpcOptions, ctx);
+            _makeServiceRequest(client, options, ctx);
         }
     });
 }
 
 function noop () {}
 
+//Only top-level Promise has notify. This is intentional as then().notify() does not make any sense.
+//  Notify keeps the chain open indefinitely and can be called repeatedly.
+//  Once Then is called, the promise chain is considered resolved and marked for cleanup. Notify can never be called after a then.
 function _wrapPromise (callback) {
 
+    let promise = new Promise(function (resolve, reject) {
+        callback(resolve, reject, handleNotify);
+    });
+
+    promise._notify = noop;
+    promise.notify = notify;
+
     function notify (fn) {
-        promise._notify = fn;
+
+        if (promise._notify === noop) {
+            promise._notify = fn;
+        }
+        else {
+            //Support chaining notify calls: notify().notify()
+            let chainNotify = promise._notify;
+
+            promise._notify = function (result) {
+                return fn(chainNotify(result));
+            };
+        }
 
         return this;
     }
@@ -317,91 +420,58 @@ function _wrapPromise (callback) {
         promise._notify(result);
     }
 
-    var promise = new Promise(function (resolve, reject) {
-        callback(resolve, reject, handleNotify);
-    });
-
-    promise._notify = noop;
-    promise.notify = notify;
-
     return promise;
 }
 
-function prepareContext(service$$1, methodSignature) {
-    var ctx = {};
+function prepareContext() {
+    let ctx = {};
 
-    ctx.transform = transformPassThrough;
     ctx.stopPolling = noop;
     ctx.isPolling = function () { return false; };
-
-    if (service$$1.serviceUseTransforms && service$$1.serviceName)  {
-
-        var availableTransforms = getTransformsByService(service$$1.serviceName);
-
-        if (availableTransforms) {
-            ctx.transform = getTransform(availableTransforms, methodSignature);
-        }
-    }
 
     return ctx;
 }
 
-function getTransform (availableTransforms, methodSignature) {
-    return function (rawData) {
+function _makeServiceRequest (client, options, ctx) {
 
-        var foundTransform;
+    let promise = client.invoke(options);
 
-        availableTransforms.some(function (entry) {
-            if (methodSignature.indexOf(entry.sig) === 0) {
-                foundTransform = entry.transform;
+    promise.catch(function (response) {
+        ctx.errorFunction(response);
+    });
 
-                return true;
-            }
-        });
+    promise = promise.then(function (response) {
 
-        return foundTransform ? foundTransform(rawData) : rawData;
-    };
-}
+        let data = ctx.transformResponse(response);
 
-function transformPassThrough (rawData) {
-    return rawData;
-}
+        if (!data) {
+            let error = ctx.transformResponseError(response);
 
-function _makeRpcRequest (rpcClient, rpcOptions, ctx) {
-
-    return rpcClient.invoke(rpcOptions)
-        .then(function (response) {
-
-            var data = ctx.transformResponse(response);
-
-            if (!data) {
-                var error = ctx.transformResponseError(response);
-
-                if (error) {
-                    ctx.errorFunction(error, response);
-                    if (ctx.isPolling()) {
-                        ctx.stopPolling();
-                    }
-
-                    return;
+            if (error) {
+                ctx.errorFunction(error, response);
+                if (ctx.isPolling()) {
+                    ctx.stopPolling();
                 }
-            }
 
-            if (ctx.isPolling()) {
-                ctx.notifyFunction(ctx.transform(data), response);
+                return;
             }
-            else {
-                ctx.successFunction(ctx.transform(data), response);
-            }
+        }
 
-        })
-        .catch(function (response) {
-            ctx.errorFunction(response);
-        });
+        if (ctx.isPolling()) {
+            ctx.notifyFunction(data, response);
+        }
+        else {
+            ctx.successFunction(data, response);
+        }
+
+    });
+
+    return promise;
+
 }
 
 function rest (options) {
-    var inst = new RestService();
+    let inst = new RestService();
 
     serviceOptions(inst, 'rest', options);
 
@@ -437,8 +507,6 @@ function RestService () {
             throw new Error('You must configure at least the http method and url');
         }
 
-        var methodSignature = method + '::' + url;
-
         options = options || {};
 
         if (service.baseUrl() !== undefined) {
@@ -450,20 +518,24 @@ function RestService () {
         options.method = method;
         options.queryParams = queryParams;
 
-        options.transformResponse = function (response) {
-            return response.data;
-        };
+        if (!options.hasOwnProperty('transformResponse')) {
+            options.transformResponse = function (response) {
+                return response.data;
+            };
+        }
 
-        options.transformResponseError = function (response) {
-            return response.data;
-        };
+        if (!options.hasOwnProperty('transformResponseError')) {
+            options.transformResponseError = function (response) {
+                return response.data;
+            };
+        }
 
-        return makeRpcRequest(service, options, methodSignature);
+        return makeServiceRequest(service, options);
     }
 }
 
 function antChain(options) {
-    var inst = new RestService();
+    let inst = new RestService();
 
     serviceOptions(inst, 'antChain', options);
 
@@ -530,43 +602,39 @@ function getAssetTransactionsByAddress (address) {
     return this.$get('address/utxo/' + address);
 }
 
-function RpcService () {
+function neon(options) {
+    var inst = new RestService();
 
-    this.$post = $post;
+    serviceOptions(inst, 'neon', options);
 
-    function $post (rpcMethod, rpcParams) {
-        return rpcRequest(this, 'POST', rpcMethod, rpcParams);
-    }
+    inst.getCurrentBlockHeight = getCurrentBlockHeight$1;
+    inst.getAddressBalance = getAddressBalance$2;
+    inst.getAssetTransactionsByAddress = getAssetTransactionsByAddress$1;
+    inst.getTransactionByTxid = getTransactionByTxid$1;
 
-    function rpcRequest (service, method, rpcMethod, rpcParams) {
+    return inst;
+}
 
-        if (!rpcMethod) {
-            throw new Error('You must configure the rpc method');
-        }
+function getCurrentBlockHeight$1 () {
+    return this.$get('block/height', null, { transformResponse: transformResponse });
 
-        var data = { jsonrpc: '2.0', id: 1 };
-
-        data.method = rpcMethod;
-        data.params = rpcParams || [];
-
-        var options = {};
-
-        options.url = service.baseUrl();
-        options.data = data;
-        options.method = method;
-
-        options.transformResponse = function (response) {
-            return response.data.result;
+    function transformResponse (response) {
+        return {
+            height: response.data && response.data.block_height
         };
-
-        options.transformResponseError = function (response) {
-            return response.data.error;
-        };
-
-        var methodSignature = method + '::' + rpcMethod;
-
-        return makeRpcRequest(service, options, methodSignature);
     }
+}
+
+function getAddressBalance$2 (address) {
+    return this.$get('address/balance/' + address);
+}
+
+function getAssetTransactionsByAddress$1 (address) {
+    return this.$get('address/history/' + address);
+}
+
+function getTransactionByTxid$1 (txid) {
+    return this.$get('transaction/' + txid);
 }
 
 function node(options) {
@@ -1938,15 +2006,9 @@ if (typeof process === 'undefined' && !window.process) {
     window.process = {env: {}};
 }
 
-var axiosClient = AxiosClient();
+let axiosClient = AxiosClient();
 
 function AxiosClient (){
-
-    var supportMap = { http: true, rpc: true };
-
-    function hasProtocolSupport (protocol) {
-        return supportMap[protocol];
-    }
 
     function invoke (restOptions) {
         return index(restOptions);
@@ -1971,7 +2033,7 @@ function AxiosClient (){
     function buildRequestOptions (options) {
 
         //Build Url with queryParams
-        var paramStr = options.queryParams && serialize(options.queryParams);
+        let paramStr = options.queryParams && serialize(options.queryParams);
 
         if(paramStr) {
             options.url = options.url + '?' + paramStr;
@@ -1998,110 +2060,15 @@ function AxiosClient (){
 
     return {
         invoke: invoke,
-        hasProtocolSupport: hasProtocolSupport,
         buildRequestOptions: buildRequestOptions
     };
 }
 
-var AddressBalanceFactory = AddressBalanceFactory$1();
-
-function AddressBalanceFactory$1 () {
-
-    function AddressBalance () {
-        this.id = undefined;
-        this.antShares = undefined;
-        this.antCoins = undefined;
-    }
-
-    AddressBalance.prototype.update = update;
-
-    function update (rawData) {
-        this.id = rawData.address;
-
-        if (rawData.asset && rawData.asset.length === 2) {
-            this.antShares = Object.assign({}, rawData.asset[0]);
-            this.antCoins = Object.assign({}, rawData.asset[1]);
-        }
-    }
-
-    function createFromJson (rawData) {
-        var inst = new AddressBalance();
-
-        inst.update(rawData);
-
-        return inst;
-    }
-
-    return {
-        createFromJson: createFromJson
-    };
-}
-
-var AddressAssetFactory = AddressAssetFactory$1();
-
-function AddressAssetFactory$1 () {
-
-    function AddressAsset () {
-        this.id = undefined;
-        this.name = undefined;
-        this.balance = undefined;
-        this.transactions = undefined;
-    }
-
-    AddressAsset.prototype.update = update;
-
-    function update (rawData) {
-        this.id = rawData.assetId;
-        this.name = rawData.name;
-        this.balance = rawData.balance;
-
-        //List of transactions that contribute to the total balance
-        this.transactions = rawData.list.map(function (tx) {
-            return Object.assign({}, tx);
-        });
-    }
-
-    function createFromJson (rawDataList) {
-
-        return rawDataList.map(function (rawData) {
-            var inst = new AddressAsset();
-
-            inst.update(rawData);
-
-            return inst;
-        });
-    }
-
-    return {
-        createFromJson: createFromJson
-    };
-}
-
-var antChainTransforms = AntChainTransforms();
-
-function AntChainTransforms () {
-
-    function transformGetValue (result) {
-        return AddressBalanceFactory.createFromJson(result);
-    }
-
-    function transformGetUnspent (result) {
-        return AddressAssetFactory.createFromJson(result);
-    }
-
-    return [
-        { sig: 'GET::address/get_value/', transform: transformGetValue },
-        { sig: 'GET::address/get_unspent/', transform: transformGetUnspent }
-    ];
-
-}
-
 registerProtocolClient(axiosClient);
-
-registerTransforms('antChain', antChainTransforms);
 
 exports.antChain = antChain;
 exports.antChainXyz = antChainXyz;
+exports.neon = neon;
 exports.node = node;
 exports.rest = rest;
 exports.registry = registry;

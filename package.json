@@ -19,7 +19,7 @@
   "scripts": {
     "test": "mocha",
     "build": "rollup -c && node rollup.node.js",
-    "uglify": "uglifyjs dist/neo.js -c negate_iife=false -m -o dist/neo.min.js"
+    "uglify": "uglifyjs dist/neo-api.js -c negate_iife=false -m -o dist/neo-api.min.js"
   },
   "devDependencies": {
     "chai": "^4.0.2",
@@ -28,7 +28,7 @@
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-eslint": "^4.0.0",
     "rollup-plugin-node-resolve": "^3.0.0",
-    "uglify-js": "^3.0.24"
+    "uglify-es": "^3.0.27"
   },
   "dependencies": {
     "axios": "^0.16.2"

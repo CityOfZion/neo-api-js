@@ -1,5 +1,5 @@
-import { RestService } from '../rest';
-import { serviceOptions } from '../serviceOptions';
+import { RestService } from '../../services/rest';
+import { serviceOptions } from '../../services/serviceOptions';
 
 export function antChainXyz(options) {
     var inst = new RestService();

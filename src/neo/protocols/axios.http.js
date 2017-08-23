@@ -5,15 +5,9 @@ if (typeof process === 'undefined' && !window.process) {
     window.process = {env: {}};
 }
 
-export var axiosClient = AxiosClient();
+export let axiosClient = AxiosClient();
 
 function AxiosClient (){
-
-    var supportMap = { http: true, rpc: true };
-
-    function hasProtocolSupport (protocol) {
-        return supportMap[protocol];
-    }
 
     function invoke (restOptions) {
         return axios(restOptions);
@@ -38,7 +32,7 @@ function AxiosClient (){
     function buildRequestOptions (options) {
 
         //Build Url with queryParams
-        var paramStr = options.queryParams && serialize(options.queryParams);
+        let paramStr = options.queryParams && serialize(options.queryParams);
 
         if(paramStr) {
             options.url = options.url + '?' + paramStr;
@@ -65,7 +59,6 @@ function AxiosClient (){
 
     return {
         invoke: invoke,
-        hasProtocolSupport: hasProtocolSupport,
         buildRequestOptions: buildRequestOptions
     };
 }

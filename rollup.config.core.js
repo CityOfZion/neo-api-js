@@ -3,9 +3,9 @@ import resolve from "rollup-plugin-node-resolve";
 import commonjs from 'rollup-plugin-commonjs';
 
 export default {
-    entry: 'neo.index.js',
+    entry: 'neo.core.index.js',
     format: 'umd',
-    dest: 'dist/neo.js',
+    dest: 'dist/neo.core.js',
     //sourceMap: 'inline',
     moduleName: 'neo',
     plugins: [

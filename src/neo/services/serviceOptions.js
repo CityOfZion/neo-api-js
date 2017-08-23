@@ -12,12 +12,10 @@ export function serviceOptions(service, serviceName, initObj) {
     service.serviceName = serviceName;
     service.serviceBaseUrl = initObj.baseUrl || '';
     service.servicePollInterval = initObj.poll;
-    service.serviceUseTransforms = false;
 
     service.baseUrl = baseUrl;
     service.protocolClient = protocolClient;
     service.poll = poll;
-    service.useTransforms = useTransforms;
 
     function baseUrl (val) {
 
@@ -51,21 +49,4 @@ export function serviceOptions(service, serviceName, initObj) {
 
         return this;
     }
-
-    function useTransforms (val) {
-
-        if (!val) {
-            return this.serviceUseTransforms;
-        }
-
-        this.serviceUseTransforms = val;
-
-        return this;
-    }
 }
-
-
-
-//neo.node().baseUrl('').protocol('http').poll(2000).getBlockHeight();
-//neo.node().baseUrl('http://localhost:3033').poll(2000).getBlockHeight();
-//neo.node({ baseUrl: 'http://localhost:3033', poll: 2000 }).getBlockHeight();

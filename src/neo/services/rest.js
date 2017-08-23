@@ -1,8 +1,8 @@
 import { serviceOptions } from './serviceOptions.js';
-import { makeRpcRequest } from './serviceRequester.js';
+import { makeServiceRequest } from './serviceRequester.js';
 
 export function rest (options) {
-    var inst = new RestService();
+    let inst = new RestService();
 
     serviceOptions(inst, 'rest', options);
 
@@ -38,8 +38,6 @@ export function RestService () {
             throw new Error('You must configure at least the http method and url');
         }
 
-        var methodSignature = method + '::' + url;
-
         options = options || {};
 
         if (service.baseUrl() !== undefined) {
@@ -51,15 +49,19 @@ export function RestService () {
         options.method = method;
         options.queryParams = queryParams;
 
-        options.transformResponse = function (response) {
-            return response.data;
-        };
+        if (!options.hasOwnProperty('transformResponse')) {
+            options.transformResponse = function (response) {
+                return response.data;
+            };
+        }
 
-        options.transformResponseError = function (response) {
-            return response.data;
-        };
+        if (!options.hasOwnProperty('transformResponseError')) {
+            options.transformResponseError = function (response) {
+                return response.data;
+            };
+        }
 
-        return makeRpcRequest(service, options, methodSignature);
+        return makeServiceRequest(service, options);
     }
 }
 

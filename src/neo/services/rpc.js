@@ -1,4 +1,4 @@
-import { makeRpcRequest } from './serviceRequester.js';
+import { makeServiceRequest } from './serviceRequester.js';
 
 export function RpcService () {
 
@@ -33,9 +33,7 @@ export function RpcService () {
             return response.data.error;
         };
 
-        var methodSignature = method + '::' + rpcMethod;
-
-        return makeRpcRequest(service, options, methodSignature);
+        return makeServiceRequest(service, options);
     }
 }
 

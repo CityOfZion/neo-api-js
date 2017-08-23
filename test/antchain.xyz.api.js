@@ -10,8 +10,6 @@ var TEST_BLOCK_HEIGHT = '0';
 
 describe('Rest Services', function() {
 
-    this.timeout(5000);
-
     var antChain = neo.antChainXyz(ANT_CHAIN_URL);
 
     describe('Address', function () {

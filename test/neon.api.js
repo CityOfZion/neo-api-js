@@ -12,7 +12,7 @@ describe('Rest Services', function() {
 
     this.timeout(5000);
 
-    var neon = neo.neon(CHAIN_URL).useTransforms(true);
+    var neon = neo.neon(CHAIN_URL);
 
     describe('Address', function () {
 

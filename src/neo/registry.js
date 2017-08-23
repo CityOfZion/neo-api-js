@@ -1,8 +1,6 @@
-var protocolClient;
-var serviceMap = {};
+let protocolClient;
 
-export var registry = {
-    registerTransforms: registerTransforms,
+export let registry = {
     registerProtocolClient: registerProtocolClient
 };
 
@@ -13,13 +11,5 @@ export function registerProtocolClient (client) {
 
 export function getProtocolClient () {
     return protocolClient;
-}
-
-export function registerTransforms (serviceName, transforms) {
-    serviceMap[serviceName] =  transforms;
-}
-
-export function getTransformsByService (serviceName) {
-    return serviceMap[serviceName];
 }
 

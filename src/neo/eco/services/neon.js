@@ -1,5 +1,5 @@
-import { RestService } from '../rest';
-import { serviceOptions } from '../serviceOptions';
+import { RestService } from '../../services/rest';
+import { serviceOptions } from '../../services/serviceOptions';
 
 export function neon(options) {
     var inst = new RestService();
@@ -15,7 +15,13 @@ export function neon(options) {
 }
 
 function getCurrentBlockHeight () {
-    return this.$get('block/height');
+    return this.$get('block/height', null, { transformResponse: transformResponse });
+
+    function transformResponse (response) {
+        return {
+            height: response.data && response.data.block_height
+        };
+    }
 }
 
 function getAddressBalance (address) {

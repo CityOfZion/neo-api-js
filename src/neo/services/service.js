@@ -1,6 +1,10 @@
 import { IntervalUtil } from '../utils/interval.js';
 
-export var service = Service();
+import { factory } from './factory/index.js';
+
+export let service = Service();
+
+service.factory = factory;
 
 function Service () {
 
@@ -63,9 +67,9 @@ function Service () {
 
 function PollRunner (policy) {
 
-    var intervalUtil = new IntervalUtil(policy.options);
-    var _isPaused = false;
-    var _isPolling = false;
+    let intervalUtil = new IntervalUtil(policy.options);
+    let _isPaused = false;
+    let _isPolling = false;
     
     this.isPolling = isPolling;
     this.addRequest = addRequest;
@@ -102,7 +106,7 @@ function PollRunner (policy) {
     setTimeout(runAll, 0);
 
     function runAll () {
-        var count = policy._requests.length;
+        let count = policy._requests.length;
 
         _isPolling = true;
 

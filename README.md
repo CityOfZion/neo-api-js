@@ -10,7 +10,7 @@ Available soon on `npm` and `bower`.
 
 npm run build
 
-Creates two bundles: One for node module `dist/neo.node.js` and one for the Browser `dist/neo.js`
+Creates two bundles: One for node module `dist/neo-api.node.js` and one for the Browser `dist/neo.js`
 
 ## Installing
 Each bundle is a [UMD](https://github.com/umdjs/umd) module and supports AMD, CommonJS, and vanilla environments. Developers can create a custom bundle using [Rollup](https://rollupjs.org) or any preferred bundler. 
@@ -19,7 +19,7 @@ Each bundle is a [UMD](https://github.com/umdjs/umd) module and supports AMD, Co
 
 NodeJS
 ```node
-var neo = require('neo.node.js');
+var neo = require('neo-api.node.js');
 ```
 
 HTML:

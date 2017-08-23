@@ -1,11 +1,10 @@
-import { getTransformsByService } from '../registry.js';
 import { service as neoService } from './service.js';
 
-export function makeRpcRequest (restService, httpOptions, methodSignature) {
+export function makeServiceRequest (restService, httpOptions) {
 
     return _wrapPromise(function (resolve, reject, notify) {
 
-        var ctx = prepareContext(restService, methodSignature);
+        let ctx = prepareContext();
 
         ctx.successFunction = resolve;
         ctx.errorFunction = reject;
@@ -13,22 +12,22 @@ export function makeRpcRequest (restService, httpOptions, methodSignature) {
         ctx.transformResponse = httpOptions.transformResponse || noop;
         ctx.transformResponseError = httpOptions.transformResponseError || noop;
 
-        var rpcClient = restService.protocolClient();
+        let client = restService.protocolClient();
 
-        var rpcOptions = rpcClient.buildRequestOptions(httpOptions);
+        let options = client.buildRequestOptions(httpOptions);
 
-        var poll = restService.poll();
+        let poll = restService.poll();
 
         if (poll) {
-            var pollRunner = neoService.getPollRunner(poll).addRequest(function () {
-                return _makeRpcRequest(rpcClient, rpcOptions, ctx);
+            let pollRunner = neoService.getPollRunner(poll).addRequest(function () {
+                return _makeServiceRequest(client, options, ctx);
             });
 
             ctx.stopPolling = pollRunner.pause;
             ctx.isPolling = pollRunner.isPolling;
         }
         else {
-            _makeRpcRequest(rpcClient, rpcOptions, ctx);
+            _makeServiceRequest(client, options, ctx);
         }
     });
 }
@@ -40,7 +39,7 @@ function noop () {}
 //  Once Then is called, the promise chain is considered resolved and marked for cleanup. Notify can never be called after a then.
 function _wrapPromise (callback) {
 
-    var promise = new Promise(function (resolve, reject) {
+    let promise = new Promise(function (resolve, reject) {
         callback(resolve, reject, handleNotify);
     });
 
@@ -54,7 +53,7 @@ function _wrapPromise (callback) {
         }
         else {
             //Support chaining notify calls: notify().notify()
-            var chainNotify = promise._notify;
+            let chainNotify = promise._notify;
 
             promise._notify = function (result) {
                 return fn(chainNotify(result));
@@ -71,49 +70,18 @@ function _wrapPromise (callback) {
     return promise;
 }
 
-function prepareContext(service, methodSignature) {
-    var ctx = {};
+function prepareContext() {
+    let ctx = {};
 
-    ctx.transform = transformPassThrough;
     ctx.stopPolling = noop;
     ctx.isPolling = function () { return false; };
-
-    if (service.serviceUseTransforms && service.serviceName)  {
-
-        var availableTransforms = getTransformsByService(service.serviceName);
-
-        if (availableTransforms) {
-            ctx.transform = getTransform(availableTransforms, methodSignature);
-        }
-    }
 
     return ctx;
 }
 
-function getTransform (availableTransforms, methodSignature) {
-    return function (rawData) {
+function _makeServiceRequest (client, options, ctx) {
 
-        var foundTransform;
-
-        availableTransforms.some(function (entry) {
-            if (methodSignature.indexOf(entry.sig) === 0) {
-                foundTransform = entry.transform;
-
-                return true;
-            }
-        });
-
-        return foundTransform ? foundTransform(rawData) : rawData;
-    };
-}
-
-function transformPassThrough (rawData) {
-    return rawData;
-}
-
-function _makeRpcRequest (rpcClient, rpcOptions, ctx) {
-
-    var promise = rpcClient.invoke(rpcOptions);
+    let promise = client.invoke(options);
 
     promise.catch(function (response) {
         ctx.errorFunction(response);
@@ -121,10 +89,10 @@ function _makeRpcRequest (rpcClient, rpcOptions, ctx) {
 
     promise = promise.then(function (response) {
 
-        var data = ctx.transformResponse(response);
+        let data = ctx.transformResponse(response);
 
         if (!data) {
-            var error = ctx.transformResponseError(response);
+            let error = ctx.transformResponseError(response);
 
             if (error) {
                 ctx.errorFunction(error, response);
@@ -137,10 +105,10 @@ function _makeRpcRequest (rpcClient, rpcOptions, ctx) {
         }
 
         if (ctx.isPolling()) {
-            ctx.notifyFunction(ctx.transform(data), response);
+            ctx.notifyFunction(data, response);
         }
         else {
-            ctx.successFunction(ctx.transform(data), response);
+            ctx.successFunction(data, response);
         }
 
     });

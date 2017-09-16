@@ -1,0 +1,22 @@
+<!doctype>
+<html>
+
+<head>
+    <script type="text/javascript" src="neo.js"></script>
+    <script type="text/javascript">
+
+        function getBalance() {
+
+            neo.antChain('http://www.antchain.org/api/v1/').getAddressBalance('AQVh2pG732YvtNaxEGkQUei3YA4cvo7d2i').then(function (result) {
+                document.getElementById('antShares').innerText = 'ANS = ' + result.asset[0].value;
+                document.getElementById('antCoins').innerText = 'ANC = ' + result.asset[1].value;
+            });
+        }
+    </script>
+</head>
+<body>
+<h1>AntShares Balance</h1>
+<button type="button" onClick="getBalance();">Get Balance</button>
+<span id="antShares"></span> <span id="antCoins"></span>
+</body>
+</html>

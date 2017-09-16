@@ -4,7 +4,7 @@
     width="125px;">
 </p>
 
-<h1 align="center">neo-api-js</h1>
+<h1 align="center">neo-api</h1>
 
 <p align="center">
   NEO JavaScript API for connecting to a <b>NEO</b> Network.

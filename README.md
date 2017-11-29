@@ -15,7 +15,7 @@
 
 Interface methods provide access to JSON-RPC <b>NEO</b> Nodes as well as Rest Services to AntChain and Neon.
 
-Available soon on `npm` and `bower`.
+Available on [npm](https://www.npmjs.com/package/neo-api)
 
 [Documentation](https://github.com/CityOfZion/neo-api-js/wiki)
 

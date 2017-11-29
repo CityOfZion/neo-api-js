@@ -604,12 +604,26 @@ function getAssetTransactionsByAddress (address) {
     return this.$get('address/utxo/' + address);
 }
 
+function neoScan(options) {
+    var inst = new RestService();
+
+    serviceOptions(inst, 'neoScan', options);
+
+    inst.getCurrentBlockHeight = getCurrentBlockHeight$1;
+
+    return inst;
+}
+
+function getCurrentBlockHeight$1 () {
+    return this.$get('get_height');
+}
+
 function neon(options) {
     var inst = new RestService();
 
     serviceOptions(inst, 'neon', options);
 
-    inst.getCurrentBlockHeight = getCurrentBlockHeight$1;
+    inst.getCurrentBlockHeight = getCurrentBlockHeight$2;
     inst.getAddressBalance = getAddressBalance$2;
     inst.getAssetTransactionsByAddress = getAssetTransactionsByAddress$1;
     inst.getTransactionByTxid = getTransactionByTxid$1;
@@ -617,7 +631,7 @@ function neon(options) {
     return inst;
 }
 
-function getCurrentBlockHeight$1 () {
+function getCurrentBlockHeight$2 () {
     return this.$get('block/height', null, { transformResponse: transformResponse });
 
     function transformResponse (response) {
@@ -767,6 +781,7 @@ registerProtocolClient(axiosClient);
 
 exports.antChain = antChain;
 exports.antChainXyz = antChainXyz;
+exports.neoScan = neoScan;
 exports.neon = neon;
 exports.node = node;
 exports.rest = rest;

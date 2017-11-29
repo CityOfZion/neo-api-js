@@ -1,5 +1,6 @@
 export { antChain } from './eco/services/antChain';
 export { antChainXyz } from './eco/services/antChainXyz';
+export { neoScan } from './eco/services/neoScan';
 export { neon } from './eco/services/neon';
 export { node } from './services/node/index.js';
 export { rest } from './services/rest.js';

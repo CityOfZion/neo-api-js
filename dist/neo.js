@@ -667,6 +667,7 @@ function node(options) {
 
     //Net
     inst.getConnectionCount = getConnectionCount;
+    inst.getVersion = getVersion;
 
     //Tx
     inst.getRawMemPool = getRawMemPool;
@@ -698,6 +699,10 @@ function getBlockHashByHeight (height) {
 
 function getConnectionCount () {
     return this.$post('getconnectioncount', []);
+}
+
+function getVersion () {
+    return this.$post('getversion', []);
 }
 
 function getRawMemPool () {

@@ -34,13 +34,13 @@ describe('RPC Services', function() {
     describe('Block', function () {
 
         it('get last block hash', function () {
-            return mainNet.getLastBlockHash().then(function (result) {
+            return mainNet.getBestBlockHash().then(function (result) {
                 expect(result).to.be.a('string');
             });
         });
 
         it('get block by height', function () {
-            return mainNet.getBlockByHeight(TEST_BLOCK_HEIGHT, 1).then(function (result) {
+            return mainNet.getBlock(TEST_BLOCK_HEIGHT, 1).then(function (result) {
                 expect(result).to.have.any.keys('hash', 'index', 'tx', 'confirmations');
             });
         });

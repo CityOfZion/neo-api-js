@@ -47,7 +47,7 @@ var localNode = neo.node('http://localhost:10332');
 localNode.getBlockCount().then(function (result) {
     console.log('Current block height: ' + result);
 });
-localNode.getLastBlockHash().then(function (result) {
+localNode.getBestBlockHash().then(function (result) {
     console.log('Hash of last block: ' + result);
 });
 ```

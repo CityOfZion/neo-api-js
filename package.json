@@ -1,6 +1,6 @@
 {
   "name": "neo-api",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "description": "NEO Network JavaScript API",
   "keywords": [
     "neo",

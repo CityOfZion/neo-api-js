@@ -13,7 +13,9 @@
 
 # NEO JavaScript API
 
-Interface methods provide access to JSON-RPC <b>NEO</b> Nodes as well as Rest Services to AntChain and Neon.
+This api library is currently being used by Neo Network Status Monitor (NeoMon)
+
+Interface methods provide access to JSON-RPC <b>NEO</b> Nodes as well as lightweight Rest Services to AntChain and Neon.
 
 Available on [npm](https://www.npmjs.com/package/neo-api)
 

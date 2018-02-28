@@ -18,6 +18,11 @@ export function makeServiceRequest (restService, httpOptions) {
 
         let poll = restService.poll();
 
+        if (restService.monitorLatency()) {
+            ctx.startLatencyTimer = restService.startLatencyTimer;
+            ctx.stopLatencyTimer = restService.stopLatencyTimer;
+        }
+
         if (poll) {
             let pollRunner = neoService.getPollRunner(poll).addRequest(function () {
                 return _makeServiceRequest(client, options, ctx);
@@ -71,23 +76,31 @@ function _wrapPromise (callback) {
 }
 
 function prepareContext() {
-    let ctx = {};
+    let ctx = { };
 
     ctx.stopPolling = noop;
-    ctx.isPolling = function () { return false; };
+    ctx.isPolling = noop;//function () { return false; };
+    ctx.startLatencyTimer = noop;
+    ctx.stopLatencyTimer = noop;
 
     return ctx;
 }
 
 function _makeServiceRequest (client, options, ctx) {
 
+    ctx.startLatencyTimer();
+
     let promise = client.invoke(options);
 
     promise.catch(function (response) {
         ctx.errorFunction(response);
+
+        ctx.stopLatencyTimer();
     });
 
     promise = promise.then(function (response) {
+
+        ctx.stopLatencyTimer();
 
         let data = ctx.transformResponse(response);
 

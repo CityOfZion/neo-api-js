@@ -15,7 +15,7 @@
 
 This api library is currently being used by Neo Network Status Monitor (NeoMon)
 
-Interface methods provide access to JSON-RPC <b>NEO</b> Nodes as well as lightweight Rest Services to AntChain and Neon.
+Interface methods provide access to JSON-RPC <b>NEO</b> Nodes as well as Neo REST service providers. This is a barebones API framework providing wrappers around commonly known NEO endpoints. No crypto libraries for reading / writing transactions are provided. The framework is intended to be used for getting state information from service end points. The APIs for writing transactions may be included but the capability to write and sign those transactions is left up to other frameworks. 
 
 Available on [npm](https://www.npmjs.com/package/neo-api)
 

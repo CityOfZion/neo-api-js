@@ -95,7 +95,7 @@ function _makeServiceRequest (client, options, ctx) {
     promise.catch(function (response) {
         ctx.errorFunction(response);
 
-        ctx.stopLatencyTimer();
+        ctx.stopLatencyTimer(true);
     });
 
     promise = promise.then(function (response) {

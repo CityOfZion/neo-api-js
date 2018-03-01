@@ -30,6 +30,7 @@ function serviceOptions(service, serviceName, initObj) {
 
     service.serviceLatency = 0;
     service.serviceLatencyStartTime = 0;
+    service.serviceLastConnectedTime = Date.now();
     service.serviceName = serviceName;
     service.serviceBaseUrl = initObj.baseUrl || '';
     service.servicePollInterval = initObj.poll;
@@ -42,14 +43,22 @@ function serviceOptions(service, serviceName, initObj) {
     service.startLatencyTimer = startLatencyTimer;
     service.stopLatencyTimer = stopLatencyTimer;
     service.latency = latency;
+    service.lastConnectedTime = lastConnectedTime;
 
 
     function startLatencyTimer () {
         service.serviceLatencyStartTime = Date.now();
     }
 
-    function stopLatencyTimer () {
-        service.serviceLatency = Date.now() - service.serviceLatencyStartTime;
+    function stopLatencyTimer (hasError) {
+
+        if (hasError) {
+            service.serviceLatency = 0;
+        }
+        else {
+            service.serviceLastConnectedTime = Date.now();
+            service.serviceLatency = service.serviceLastConnectedTime - service.serviceLatencyStartTime;
+        }
     }
 
     function baseUrl (val) {
@@ -104,6 +113,18 @@ function serviceOptions(service, serviceName, initObj) {
 
         //read-only
         //this.serviceLatency = val;
+
+        return this;
+    }
+
+    function lastConnectedTime (val) {
+
+        if (!val) {
+            return this.serviceLastConnectedTime;
+        }
+
+        //read-only
+        //this.serviceLastConnectedTime = val;
 
         return this;
     }
@@ -487,7 +508,7 @@ function _makeServiceRequest (client, options, ctx) {
     promise.catch(function (response) {
         ctx.errorFunction(response);
 
-        ctx.stopLatencyTimer();
+        ctx.stopLatencyTimer(true);
     });
 
     promise = promise.then(function (response) {
@@ -701,6 +722,27 @@ function getAssetTransactionsByAddress$1 (address) {
 
 function getTransactionByTxid$1 (txid) {
     return this.$get('transaction/' + txid);
+}
+
+function pyrest(options) {
+    var inst = new RestService();
+
+    serviceOptions(inst, 'pyrest', options);
+
+    inst.getCurrentBlockHeight = getCurrentBlockHeight$3;
+
+    return inst;
+}
+
+function getCurrentBlockHeight$3 () {
+    return this.$get('status', null, { transformResponse: transformResponse });
+
+    function transformResponse (response) {
+        return {
+            height: response.data && response.data.current_height,
+            version: response.data && response.data.version
+        };
+    }
 }
 
 function node(options) {
@@ -2253,6 +2295,7 @@ exports.antChain = antChain;
 exports.antChainXyz = antChainXyz;
 exports.neoScan = neoScan;
 exports.neon = neon;
+exports.pyrest = pyrest;
 exports.node = node;
 exports.rest = rest;
 exports.registry = registry;

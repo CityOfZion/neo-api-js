@@ -111,6 +111,7 @@ function serviceOptions(service, serviceName, initObj) {
 
     service.serviceLatency = 0;
     service.serviceLatencyStartTime = 0;
+    service.serviceLastConnectedTime = Date.now();
     service.serviceName = serviceName;
     service.serviceBaseUrl = initObj.baseUrl || '';
     service.servicePollInterval = initObj.poll;
@@ -123,14 +124,22 @@ function serviceOptions(service, serviceName, initObj) {
     service.startLatencyTimer = startLatencyTimer;
     service.stopLatencyTimer = stopLatencyTimer;
     service.latency = latency;
+    service.lastConnectedTime = lastConnectedTime;
 
 
     function startLatencyTimer () {
         service.serviceLatencyStartTime = Date.now();
     }
 
-    function stopLatencyTimer () {
-        service.serviceLatency = Date.now() - service.serviceLatencyStartTime;
+    function stopLatencyTimer (hasError) {
+
+        if (hasError) {
+            service.serviceLatency = 0;
+        }
+        else {
+            service.serviceLastConnectedTime = Date.now();
+            service.serviceLatency = service.serviceLastConnectedTime - service.serviceLatencyStartTime;
+        }
     }
 
     function baseUrl (val) {
@@ -185,6 +194,18 @@ function serviceOptions(service, serviceName, initObj) {
 
         //read-only
         //this.serviceLatency = val;
+
+        return this;
+    }
+
+    function lastConnectedTime (val) {
+
+        if (!val) {
+            return this.serviceLastConnectedTime;
+        }
+
+        //read-only
+        //this.serviceLastConnectedTime = val;
 
         return this;
     }
@@ -512,7 +533,7 @@ function _makeServiceRequest (client, options, ctx) {
     promise.catch(function (response) {
         ctx.errorFunction(response);
 
-        ctx.stopLatencyTimer();
+        ctx.stopLatencyTimer(true);
     });
 
     promise = promise.then(function (response) {
